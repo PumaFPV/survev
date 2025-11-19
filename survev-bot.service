@@ -1,0 +1,11 @@
+[Unit]
+Description=survev bot.
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/survev/bot
+ExecStart=/usr/bin/pnpm start
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

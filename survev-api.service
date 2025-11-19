@@ -1,0 +1,11 @@
+[Unit]
+Description=survev dedicated API server.
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/survev/server
+ExecStart=/usr/bin/pnpm start:api
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

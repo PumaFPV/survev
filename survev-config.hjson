@@ -1,0 +1,21 @@
+{
+  secrets: {
+    SURVEV_API_KEY: QUEjVvi+c483Su2GfX31NcDaLvVjcZ082KVeatGURI+ok5isqyZbV6S0MdmzcCMeBkVYvZ4Fb4V99/jw/FBtlA==
+    SURVEV_LOADOUT_SECRET: tRUPcIWVlwcyajQwYTNgUKuix8HjMK39cG65vYuGXqA=
+  }
+  database: {
+    enabled: true
+  }
+  oauthRedirectURI: http://127.0.0.1:8000
+  regions: {
+    eu: {
+      https: false
+      address: ""
+      l10n: ""
+    }
+  }
+  gameServer: {
+    thisRegion: eu
+    apiServerUrl: http://127.0.0.1:8000
+  }
+}
