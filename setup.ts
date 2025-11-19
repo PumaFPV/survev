@@ -30,9 +30,6 @@ async function setupGameServer(config: PartialConfig) {
     };
 
     config.gameServer.apiServerUrl = "http://127.0.0.1:8000";
-
-    await setupProxyIPHeader(config, "gameServer");
-    await setupSSL(config, "gameServer");
 }
 
 async function setupDatabase(config: PartialConfig, initial = true) {
@@ -41,15 +38,6 @@ async function setupDatabase(config: PartialConfig, initial = true) {
         ...config.database,
         enabled: dbEnabled.value,
     };
-
-    const setupBot = await prompt<{ value: boolean }>({
-        message: "Would you like to setup the moderation bot?",
-        name: "value",
-        type: "confirm",
-        initial: false,
-    });
-
-    await setupBotConfig(config);
 }
 
 async function setupAPIServer(config: PartialConfig) {
@@ -64,8 +52,6 @@ async function setupAPIServer(config: PartialConfig) {
     if (shouldImportKeys.value === "import") {
         await importKeys(config);
     }
-    await setupProxyIPHeader(config, "apiServer");
-    await setupSSL(config, "apiServer");
     await setupDatabase(config);
 }
 
@@ -136,59 +122,6 @@ async function setupProxyCheck(config: PartialConfig) {
     }
 }
 
-async function setupProxyIPHeader(
-    config: PartialConfig,
-    server: "apiServer" | "gameServer",
-) {
-    const serverName = server == "apiServer" ? "API server" : "game server";
-    const isBehindProxy = await prompt<{ value: boolean }>({
-        message: `Is the ${serverName} behind a proxy? (e.g nginx or cloudflare)`,
-        name: "value",
-        type: "confirm",
-        initial: false,
-    });
-
-    if (isBehindProxy.value) {
-        const proxyHeader = await prompt<{ value: string }>({
-            message: "Enter the proxy HTTP header",
-            name: "value",
-            type: "text",
-            initial: "X-Real-IP",
-        });
-        config[server] ??= {};
-        config[server].proxyIPHeader = proxyHeader.value;
-    }
-}
-
-async function setupSSL(config: PartialConfig, server: "apiServer" | "gameServer") {
-    const serverName = server == "apiServer" ? "API server" : "game server";
-
-    const enableSSL = await prompt<{ value: boolean }>({
-        message: `Would you like enabling SSL for the ${serverName}?`,
-        name: "value",
-        type: "confirm",
-        initial: false,
-    });
-
-    if (enableSSL.value) {
-        const keyFilePath = await prompt<{ value: string }>({
-            message: "Enter SSL key file path",
-            name: "value",
-            type: "text",
-        });
-        const certFilePath = await prompt<{ value: string }>({
-            message: "Enter SSL cert file path",
-            name: "value",
-            type: "text",
-        });
-        config[server] ??= {};
-        config[server].ssl = {
-            keyFile: keyFilePath.value,
-            certFile: certFilePath.value,
-        };
-    }
-}
-
 async function setupProductionConfig(config: PartialConfig) {
 
         await setupGameServer(config);
@@ -201,40 +134,6 @@ async function setupDevelopmentConfig(config: PartialConfig) {
     await setupDatabase(config, false);
 }
 
-async function setupBotConfig(config: PartialConfig) {
-    config.secrets ??= {};
-
-    if (!config.secrets.DISCORD_CLIENT_ID) {
-        const clientId = await prompt<{ value: string }>({
-            message: "Enter discord client ID",
-            name: "value",
-            type: "text",
-            required: true,
-        });
-        config.secrets.DISCORD_CLIENT_ID = clientId.value;
-    }
-
-    const discordBotToken = await prompt<{ value: string }>({
-        message: "Enter the discord bot token",
-        name: "value",
-        type: "text",
-    });
-    config.secrets.DISCORD_BOT_TOKEN = discordBotToken.value;
-
-    const discordGuildId = await prompt<{ value: string }>({
-        message: "Enter the guild ID",
-        name: "value",
-        type: "text",
-    });
-    config.discordGuildId = discordGuildId.value;
-
-    const discordRoleId = await prompt<{ value: string }>({
-        message: "Enter the discord role ID",
-        name: "value",
-        type: "text",
-    });
-    config.discordRoleId = discordRoleId.value;
-}
 
 const configPath = path.join(import.meta.dirname, configFileName);
 
