@@ -23,13 +23,11 @@ async function setupGameServer(config: PartialConfig) {
 
     config.regions ??= {};
 
-    if (!config.regions[regionId.value]) {
-        config.regions[regionId.value] = {
-            https: false,
-            address: "",
-            l10n: "",
-        };
-    }
+    config.regions["eu"] = {
+        https: false,
+        address: "",
+        l10n: "",
+    };
 
     config.gameServer.apiServerUrl = "http://127.0.0.1:8000";
 
@@ -242,8 +240,6 @@ const configPath = path.join(import.meta.dirname, configFileName);
 
 async function loadExistingConfig(config: PartialConfig) {
     if (!fs.existsSync(configPath)) return;
-
-    process.exit(0);
 
     const configText = fs.readFileSync(configPath).toString();
     const localConfig = hjson.parse(configText);
