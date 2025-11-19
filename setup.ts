@@ -9,14 +9,6 @@ import { util } from "./shared/utils/util";
 
 const prompt = enquirer.prompt;
 
-async function importKeys(config: PartialConfig) {
-    config.secrets ??= {};
-
-    config.secrets.SURVEV_API_KEY = apiKey.value;
-
-    config.secrets.SURVEV_LOADOUT_SECRET = loadoutSecret.value;
-}
-
 async function setupGameServer(config: PartialConfig) {
     config.gameServer ??= {};
     config.gameServer.thisRegion = "eu";
@@ -32,6 +24,7 @@ async function setupGameServer(config: PartialConfig) {
     config.gameServer.apiServerUrl = "http://127.0.0.1:8000";
 }
 
+
 async function setupDatabase(config: PartialConfig, initial = true) {
 
     config.database = {
@@ -40,20 +33,12 @@ async function setupDatabase(config: PartialConfig, initial = true) {
     };
 }
 
-async function setupAPIServer(config: PartialConfig) {
-    const shouldImportKeys = await prompt<{ value: "import" | "random" }>({
-        message:
-            "Would you like to import the API and loadout secret keys or use random ones?",
-        name: "value",
-        type: "select",
-        choices: ["import", "random"],
-    });
 
-    if (shouldImportKeys.value === "import") {
-        await importKeys(config);
-    }
+async function setupAPIServer(config: PartialConfig) {
+
     await setupDatabase(config);
 }
+
 
 async function setupRegions(config: PartialConfig) {
     config.regions ??= {};
@@ -104,6 +89,7 @@ async function setupRegions(config: PartialConfig) {
     }
 }
 
+
 async function setupProxyCheck(config: PartialConfig) {
     const enableProxyCheck = await prompt<{ value: boolean }>({
         message: "Would you like to enable proxycheck.io to ban VPNs and proxies?",
@@ -122,6 +108,7 @@ async function setupProxyCheck(config: PartialConfig) {
     }
 }
 
+
 async function setupProductionConfig(config: PartialConfig) {
 
         await setupGameServer(config);
@@ -130,12 +117,14 @@ async function setupProductionConfig(config: PartialConfig) {
     await setupProxyCheck(config);
 }
 
+
 async function setupDevelopmentConfig(config: PartialConfig) {
     await setupDatabase(config, false);
 }
 
 
 const configPath = path.join(import.meta.dirname, configFileName);
+
 
 async function loadExistingConfig(config: PartialConfig) {
     if (!fs.existsSync(configPath)) return;
@@ -144,6 +133,7 @@ async function loadExistingConfig(config: PartialConfig) {
     const localConfig = hjson.parse(configText);
     util.mergeDeep(config, localConfig);
 }
+
 
 async function setupConfig() {
     const config: PartialConfig = {
