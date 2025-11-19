@@ -11,189 +11,47 @@ const prompt = enquirer.prompt;
 
 async function importKeys(config: PartialConfig) {
     config.secrets ??= {};
-    const apiKey = await prompt<{ value: string }>({
-        message: "Enter API key:",
-        name: "value",
-        type: "text",
-        required: true,
-    });
+
     config.secrets.SURVEV_API_KEY = apiKey.value;
-
-    const loadoutSecret = await prompt<{ value: string }>({
-        message: "Enter Loadout secret:",
-        name: "value",
-        type: "text",
-        required: true,
-        validate(value) {
-            try {
-                atob(value);
-            } catch {
-                return "Invalid base64 string";
-            }
-
-            const buff = Buffer.from(value, "base64");
-            if (buff.length < 32) {
-                return "Loadout secret should have more than 32 bytes!";
-            }
-            return true;
-        },
-    });
 
     config.secrets.SURVEV_LOADOUT_SECRET = loadoutSecret.value;
 }
 
 async function setupGameServer(config: PartialConfig) {
     config.gameServer ??= {};
-
-    const regionId = await prompt<{ value: string }>({
-        message: "Which region is this game server hosting?",
-        name: "value",
-        type: "text",
-        required: true,
-    });
-    config.gameServer.thisRegion = regionId.value;
+    config.gameServer.thisRegion = "eu";
 
     config.regions ??= {};
 
     if (!config.regions[regionId.value]) {
-        const https = await prompt<{ value: boolean }>({
-            message: "Does this region support https?",
-            name: "value",
-            type: "confirm",
-            initial: true,
-        });
-
-        const address = await prompt<{ value: string }>({
-            message: "Enter region address",
-            name: "value",
-            type: "text",
-        });
-
-        const l10n = await prompt<{ value: string }>({
-            message:
-                "Enter region translation key (eg: index-north-america, index-south-america)",
-            name: "value",
-            type: "text",
-        });
-
         config.regions[regionId.value] = {
-            https: https.value,
-            address: address.value,
-            l10n: l10n.value,
+            https: false,
+            address: "",
+            l10n: "",
         };
     }
 
-    const apiAddress = await prompt<{ value: string }>({
-        message: "Enter the API server address",
-        name: "value",
-        type: "text",
-        required: true,
-        initial: `http://${config.apiServer?.host ?? "127.0.0.1"}:${config.apiServer?.port ?? 8000}`,
-        validate(value) {
-            return URL.parse(value) !== null;
-        },
-    });
-    config.gameServer.apiServerUrl = apiAddress.value;
+    config.gameServer.apiServerUrl = "http://127.0.0.1:8000";
 
     await setupProxyIPHeader(config, "gameServer");
     await setupSSL(config, "gameServer");
 }
 
 async function setupDatabase(config: PartialConfig, initial = true) {
-    const dbEnabled = await prompt<{ value: boolean }>({
-        message:
-            "Would you like to setup database support (required for accounts, IP bans, leaderboards etc)",
-        name: "value",
-        type: "confirm",
-        initial,
-    });
 
     config.database = {
         ...config.database,
         enabled: dbEnabled.value,
     };
 
-    if (dbEnabled.value) {
-        await setupAccounts(config);
-
-        const setupBot = await prompt<{ value: boolean }>({
-            message: "Would you like to setup the moderation bot?",
-            name: "value",
-            type: "confirm",
-            initial: false,
-        });
-
-        if (setupBot.value) {
-            await setupBotConfig(config);
-        }
-    }
-}
-
-async function setupAccounts(config: PartialConfig) {
-    const redirectURI = await prompt<{ value: string }>({
-        message:
-            "Enter the full base URL of the website for oauth2 redirects (eg: https://survev.io)",
-        name: "value",
-        type: "text",
-        initial: `http://${config.apiServer?.host ?? "127.0.0.1"}:${config.apiServer?.port ?? 8000}`,
-        required: true,
-    });
-
-    config.oauthRedirectURI = redirectURI.value;
-
-    const addGoogle = await prompt<{ value: boolean }>({
-        message: "Would you like to add google login support",
+    const setupBot = await prompt<{ value: boolean }>({
+        message: "Would you like to setup the moderation bot?",
         name: "value",
         type: "confirm",
         initial: false,
     });
 
-    config.secrets ??= {};
-
-    if (addGoogle.value) {
-        const clientId = await prompt<{ value: string }>({
-            message: "Enter google client ID",
-            name: "value",
-            type: "text",
-            required: true,
-        });
-
-        config.secrets.GOOGLE_SECRET_ID = clientId.value;
-
-        const clientSecret = await prompt<{ value: string }>({
-            message: "Enter google secret ID",
-            name: "value",
-            type: "text",
-            required: true,
-        });
-
-        config.secrets.GOOGLE_SECRET_ID = clientSecret.value;
-    }
-
-    const addDiscord = await prompt<{ value: boolean }>({
-        message: "Would you like to add discord login support",
-        name: "value",
-        type: "confirm",
-        initial: false,
-    });
-
-    if (addDiscord.value) {
-        const clientId = await prompt<{ value: string }>({
-            message: "Enter discord client ID",
-            name: "value",
-            type: "text",
-            required: true,
-        });
-        config.secrets.DISCORD_CLIENT_ID = clientId.value;
-
-        const clientSecret = await prompt<{ value: string }>({
-            message: "Enter discord secret secret",
-            name: "value",
-            type: "text",
-            required: true,
-        });
-        config.secrets.DISCORD_SECRET_ID = clientSecret.value;
-    }
+    await setupBotConfig(config);
 }
 
 async function setupAPIServer(config: PartialConfig) {
@@ -334,26 +192,10 @@ async function setupSSL(config: PartialConfig, server: "apiServer" | "gameServer
 }
 
 async function setupProductionConfig(config: PartialConfig) {
-    const apiOrGameServer = await prompt<{
-        value: "Both" | "API" | "Game server region";
-    }>({
-        message: "Are you deploying a an API server, a game server region or both?",
-        name: "value",
-        type: "select",
-        choices: ["Both", "API", "Game server region"],
-    });
 
-    if (apiOrGameServer.value === "Both") {
-        await setupAPIServer(config);
-        await setupRegions(config);
-        await setupGameServer(config);
-    } else if (apiOrGameServer.value === "API") {
-        await setupAPIServer(config);
-        await setupRegions(config);
-    } else {
         await setupGameServer(config);
         await importKeys(config);
-    }
+    
     await setupProxyCheck(config);
 }
 
@@ -401,15 +243,7 @@ const configPath = path.join(import.meta.dirname, configFileName);
 async function loadExistingConfig(config: PartialConfig) {
     if (!fs.existsSync(configPath)) return;
 
-    const confirmation = await prompt<{ value: boolean }>({
-        message: "A config file already exists, would you like to run this setup anyway?",
-        name: "value",
-        type: "confirm",
-        initial: true,
-    });
-    if (!confirmation.value) {
-        process.exit(0);
-    }
+    process.exit(0);
 
     const configText = fs.readFileSync(configPath).toString();
     const localConfig = hjson.parse(configText);
@@ -428,19 +262,8 @@ async function setupConfig() {
 
     await loadExistingConfig(config);
 
-    const devOrProd = await prompt<{ value: "development" | "production" }>({
-        message:
-            "Are you setting up a local development environment or a production server?",
-        name: "value",
-        type: "select",
-        choices: ["production", "development"],
-    });
-
-    if (devOrProd.value === "development") {
-        await setupDevelopmentConfig(config);
-    } else {
-        await setupProductionConfig(config);
-    }
+    await setupProductionConfig(config);
+    
 
     const str = hjson.stringify(config, { bracesSameLine: true, space: 2 });
     fs.writeFileSync(configPath, str);
