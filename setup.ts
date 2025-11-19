@@ -90,31 +90,10 @@ async function setupRegions(config: PartialConfig) {
 }
 
 
-async function setupProxyCheck(config: PartialConfig) {
-    const enableProxyCheck = await prompt<{ value: boolean }>({
-        message: "Would you like to enable proxycheck.io to ban VPNs and proxies?",
-        name: "value",
-        type: "confirm",
-        initial: false,
-    });
-    if (enableProxyCheck.value) {
-        const proxycheckKey = await prompt<{ value: string }>({
-            message: "Enter proxycheck API key",
-            name: "value",
-            type: "text",
-        });
-        config.secrets ??= {};
-        config.secrets.PROXYCHECK_KEY = proxycheckKey.value;
-    }
-}
-
-
 async function setupProductionConfig(config: PartialConfig) {
 
-        await setupGameServer(config);
-        await importKeys(config);
+    await setupGameServer(config);
     
-    await setupProxyCheck(config);
 }
 
 
